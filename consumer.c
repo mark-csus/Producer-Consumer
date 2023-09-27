@@ -23,7 +23,7 @@ OSs Tested on: such as Linux, Mac, etc.
 // This should receive the return value of mmap
 // Don't change this pointer in any function
 void* gShmPtr;
-
+it 
 // You won't necessarily need all the functions below
 void SetIn(int);
 void SetOut(int);
