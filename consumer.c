@@ -3,8 +3,8 @@ CSC139
 Fall 2023
 First Assignment
 Burgasser, Mark
-Section #
-OSs Tested on: such as Linux, Mac, etc.
+Section #3
+OSs Tested on: Linux (ECS computing environment)
 */
 
 #include <stdio.h>
@@ -38,7 +38,8 @@ int ReadAtBufIndex(int);
 
 int main()
 {
-    const char *name = "OS_HW1_yourName"; // Name of shared memory block to be passed to shm_open
+    printf("Consumer has been launched; reading header: \n");
+    const char *name = "OS_HW1_MarkBurgasser"; // Name of shared memory block to be passed to shm_open
     int bufSize; // Bounded buffer size
     int itemCnt; // Number of items to be consumed
     int in; // Index of next item to produce
@@ -48,16 +49,24 @@ int main()
      // Use the above name
      // **Extremely Important: map the shared memory block for both reading and writing 
      // Use PROT_READ | PROT_WRITE
-
+     int shm_fd = shm_open(name, O_RDWR, 0666); // create shared memory object
+     //ftruncate(shm_fd, SHM_SIZE); // set the size of the object to SMH_SIZE (4K)
+     gShmPtr = mmap(0, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0); // map object to memory
 
 
      // Write code here to read the four integers from the header of the shared memory block 
      // These are: bufSize, itemCnt, in, out
      // Just call the functions provided below like this:
      bufSize = GetBufSize();
-	
+     itemCnt = GetItemCnt();
+     in = GetIn();
+     out = GetOut();
+
+
      // Write code here to check that the consumer has read the right values: 
-     printf("Consumer reading: bufSize = %d\n",bufSize);
+     printf("Consumer reading: bufSize = %d\n", bufSize);
+     printf("Consumer reading: itemCnt = %d\n", itemCnt);
+     //printf("Consumer reading: seed = %d\n", seed);
 
      // Write code here to consume all the items produced by the producer
      // Use the functions provided below to get/set the values of shared variables in, out, bufSize
@@ -66,6 +75,25 @@ int main()
      // Use the following print statement to report the consumption of an item:
      // printf("Consuming Item %d with value %d at Index %d\n", i, val, out);
      // where i is the item number, val is the item value, out is its index in the bounded buffer
+
+     //for (int i=0; i<itemCnt; i++)      // error: only allowed in C99 mode; use option -std=c99 or -std=gnu99 to compile your code
+
+     int i = 0; // loop index
+     while (i < itemCnt) 
+     {
+        in = GetIn(); // update local in
+     
+        if (in != out) 
+        {
+                printf("Consumed Item: %d, Value: %d, Index: %d\n", i, ReadAtBufIndex(out), out); // print consumed item
+
+                out = (out + 1) % bufSize;  // set local out
+                SetOut(out); // copy local out to shared out
+
+                i++;  // increment 
+        }
+     }
+
                 
           
      // remove the shared memory segment 
@@ -103,6 +131,8 @@ int GetHeaderVal(int i)
 void SetHeaderVal(int i, int val)
 {
         // Write the implementation
+        void* ptr = gShmPtr + i*sizeof(int);
+        memcpy(ptr, &val, sizeof(int));
 
 }
 
@@ -135,13 +165,20 @@ int GetOut()
 void WriteAtBufIndex(int indx, int val)
 {
         // Write the implementation
-
+        void* ptr = gShmPtr + 4*sizeof(int) + indx*sizeof(int);
+	memcpy(ptr, &val, sizeof(int));
 }
 
 // Read the val at the given index in the bounded buffer
 int ReadAtBufIndex(int indx)
 {
+
+        int val; // store the read value here and return it when done.
+
         // Write the implementation
+        void* ptr = gShmPtr + 4*sizeof(int) + indx*sizeof(int);
+        memcpy(&val, ptr, sizeof(int)); 
+
+        return val;
  
 }
-
